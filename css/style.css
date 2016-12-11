@@ -1,0 +1,90 @@
+body {
+	margin-left: auto;
+	margin-right: auto;
+	width: 50%;
+	background-attachment:fixed;
+	font-family: helvetica;
+	text-align: center;
+}
+#instructions {
+	margin-top:30px;
+	font-size: 10px;
+}
+#timer {
+	font-color: black;
+	background-color: white;
+	border: 2px solid pink;
+	font-size: 18px;
+}
+#grumpy {
+	position: fixed;
+	margin-left: auto;
+	margin-right: auto;
+	width: 300px;
+	top: 0px;
+	left: 60%;
+
+}
+table {
+	margin-left: auto;
+	margin-right: auto;
+}
+#gameboard td {
+	background-color:#ff5bb0;
+	border:1px solid #ee1eb5;
+	display:inline-block;
+	cursor:pointer;
+	color:#ffffff;
+	font-family:arial;
+	font-size:15px;
+	text-align:center;
+	text-decoration:none;
+	margin: 10px;
+	width:30px;
+	height:40px;
+}
+.btn {
+	width:40px;
+	height:40px;
+	-moz-border-radius: 10px;
+	-webkit-border-radius: 10px;
+	vertical-align: top;
+}
+.btn-lg {
+	padding:0px;
+	font-size: 12px;
+}
+#god {
+	font-color:blue;
+	background-color: white;
+	-moz-border-radius: 10px;
+	-webkit-border-radius: 10px;
+	vertical-align: top;
+}
+#reset {
+	margin-right:20px;
+	background-color: red;
+	border: 2px solid pink;
+}
+
+#numMines {
+
+	margin-left: 0px;
+	margin-right: 20px;
+	font-color: white;
+	background-color: white;
+	border: 2px solid pink;
+	font-size: 18px;
+}
+
+.fa-dot-circle-o {
+	font-color:red;
+}
+.fa-times {
+	position:relative;
+	top:-20px;
+	left:-2px;
+	opacity:.7;
+	color: black;
+
+}

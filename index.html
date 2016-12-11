@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Be Minesweeper</title>
+	<!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Custom CSS -->
+    <style>
+    body {
+        padding-top: 70px;
+        /* Required padding for .navbar-fixed-top. Remove if using .navbar-static-top. Change if height of navigation changes. */
+    }
+    </style>
+    
+    <script src="js/jquery-1.11.0.js"></script>
+    <script src="js/samesame.js"></script>
+    
+</head>
+<body>
+    <div id = "container">
+        <table id="gameboard">
+            <button id="numMines" type="button" class=" btn btn-default btn-lg btn-love" onclick="location.reload()">10
+            </button>
+            <button id="reset" type="button" class="btn btn-default btn-lg btn-love" onclick="location.reload()">
+              	<i class="fa fa-heart-o fa-2x"></i>
+            </button>
+            <button id="timer" type="button" class=" btn btn-default btn-lg">0</button>
+            </table>
+        <div id='instructions'>
+            <b>Click</b>: clear space.<br/>
+            <b>Right-Click</b>: mark mine.<br/>
+            <b>Double-Click</b>: clear around marked mines<br/>
+            <button id='god' onclick="reveal()"><i class="btn-xs btn-info fa fa-eye"></i></button>
+        </div>
+    </div>
+</body>
+</html>
