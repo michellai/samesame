@@ -1,233 +1,90 @@
+const CODE_PREFIX = "&#x1F0"
+const CODE_CARDBACK = "&#x1F0A0"
+const SUIT = {
+	HEART : {value: 0, name: "H", code: "B"}, 
+	DIAMOND: {value: 1, name: "D", code: "C"}, //U+00E9 --> &#xe9;  //U+1F0B1  ---> &#x1F0 B 1
+	SPADE : {value: 2, name: "S", code: "A"},
+	CLUB : {value: 3, name: "C", code: "D"},
+};
+
+const NUM = {
+	ACE : {value: 1, name: "A", code: "1"}, 
+	TWO: {value: 2, name: "2", code: "2"},
+	THREE: {value: 3, name: "3", code: "3"},
+	FOUR: {value: 4, name: "4", code: "4"},
+	FIVE: {value: 5, name: "5", code: "5"},
+	SIX: {value: 6, name: "6", code: "6"},
+	SEVEN: {value: 7, name: "7", code: "7"},
+	EIGHT: {value: 8, name: "8", code: "8"},
+	NINE: {value: 9, name: "9", code: "9"},
+	TEN: {value: 10, name: "10", code: "A"},
+	JACK: {value: 11, name: "J", code: "B"},
+	QUEEN: {value: 12, name: "Q", code: "D"},
+	KING: {value: 13, name: "K", code: "E"},
+};
+
+
 $(function() {
-	resetBoard();
+	var players = 1;
+	// $('#reset1P').click( function (event) {
+	// 	players = 1;
+	// });
+	// $('#reset2P').click( function (event) {
+	// 	players = 2;
+	// });
+	window.board = new Board(players);
+	window.board.setup();
+	window.board.shuffle();
 
-	$('.square').dblclick( function (event) {
-		row = $(this).parent().index();
-	    col = $(this).index();
-	    if (window.minefield[row][col].isClicked) {
-	    	if (window.minefield[row][col].neighborMines == window.minefield[row][col].neighborFlags) {
-	    		//handle case where it's the wrong mine marked
-
-				for (var offsetRow = -1; offsetRow < 2; offsetRow++) {
-					for (var offsetCol = -1; offsetCol < 2; offsetCol++) {
-						if (inBounds(row, offsetRow, col, offsetCol) &&
-							!window.minefield[row+offsetRow][col+offsetCol].isClicked &&
-							!window.minefield[row+offsetRow][col+offsetCol].isFlag) {
-								clickSquare(row+offsetRow, col+offsetCol);
-						}
-					}
-				}
-			} else if (window.minefield[row][col].neighborMines < window.minefield[row][col].neighborFlags) {
-				//if flagged mines > number of neighbors, then lose
-				$(this).append(window.timesHtml);
-				reveal();
-				showLose();
-			}
-			//if #marked mines is lesser than number of mines, then don't do anything
-		}
-	});
-	$('.fa .fa-dot-circle-o').bind("contextmenu",function(e){
-		if (window.gameInPlay) {
-	        e.preventDefault();
-
-	    	if (window.minefield[row][col].isFlag) {
-	    		$(e.target).html('');
-	    		window.minefield[row][col].isFlag = false;
-    			window.clearedSquares--;
-    			updateNeighborFlags(row, col, -1);
-	    		window.mines++;
-	        	updateMines();
-	        }
-	    }
-	});
-
+	//disable right-click context menu
 	$(document).bind("contextmenu",function(e){
-		if (window.gameInPlay) {
+		if (window.board.gameInPlay) {
 	        e.preventDefault();
-
-	        if (e.target.className == "fa fa-dot-circle-o") {
-	        	//encounter Flagged icon
-	        	row = $(e.target).parent().parent().index();
-	    		col = $(e.target).parent().index();
-    			$(e.target).parent().html('');
-	    		setFlag(row, col, false);
-	        } else if (e.target.className == "square") {
-	        	//clicked on square
-		        row = $(e.target).parent().index();
-		    	col = $(e.target).index();
-
-		    	if (!window.minefield[row][col].isFlag &&
-		    		!window.minefield[row][col].isClicked &&
-		    		window.mines > 1) {
-		        	$(e.target).html(window.bombHtml);
-		        	setFlag(row, col, true);
-		        	if (window.clearedSquares+window.mines == (window.boardX*window.boardY) ) {
-						showWin();
-					}
-
-				} else if (window.minefield[row][col].isFlag) {
-		    		$(e.target).html('');
-		    		setFlag(row, col, false);
-		    	}
-	        }
 		}
     });
-	$('.square').click( function (event) {
-		if (window.gameInPlay) {
-			if (!window.startedGame) {
-				window.timer  = window.setTimeout( function(){
-			          updateTime();
-				}, 1000 );
-				window.startedGame = true;
-			}
-	    	clickSquare($(this).parent().index(), $(this).index());
-	    }
+    //when card is clicked
+	$('.card').click( function (event) {
+    	clickCard( $(this).index(), $(this).parent().index());
 	});
 
 });
-function setFlag(row, col, boolVal) {
-	window.minefield[row][col].isFlag = boolVal;
-	if (!boolVal) {
-		window.clearedSquares--;
-		updateNeighborFlags(row, col, -1);
-		window.mines++;
-	} else {
-		window.clearedSquares++;
-		updateNeighborFlags(row, col, +1);
-		window.mines--;
-	}
-	updateMines();
-}
-function updateNeighborFlags(row, col, amount) {
-	/* Update the number of neighboring mines for a particular cell */
-	for (var offsetRow = -1; offsetRow < 2; offsetRow++) {
-		for (var offsetCol = -1; offsetCol < 2; offsetCol++) {
-			if (inBounds(row, offsetRow, col, offsetCol)) {
-				var square = window.minefield[row+offsetRow][col+offsetCol]
-				if (square.neighborFlags == -1) {
-					window.minefield[row+offsetRow][col+offsetCol].neighborFlags = 1;
-				} else if(square.neighborFlags == 1 &&
-						  amount < 0 ) {
-					window.minefield[row+offsetRow][col+offsetCol].neighborFlags = -1;
-				} else
-				{
-					window.minefield[row+offsetRow][col+offsetCol].neighborFlags+=amount;
-				}
-			}
-		}
-	}
-}
 
-function countNeighborMines(row, col) {
+function clickCard(x, y) {
+	var clickedCard = window.board.cards[y][x];
+	console.log(clickedCard.cardInfo(), window.board.cardsVisible.length );
+	
 
-	for (var offsetRow = -1; offsetRow < 2; offsetRow++) {
-		for (var offsetCol = -1; offsetCol < 2; offsetCol++) {
-			if (inBounds(row, offsetRow, col, offsetCol) &&
-				window.minefield[row+offsetRow][col+offsetCol].hasMine) {
-					window.minefield[row+offsetRow][col+offsetCol].neighborMines++;
-			}
+	//nothing to do for card already flipped
+	if (window.board.cards[y][x].faceup) { return; }
 
-		}
-	}
-}
-function Square() {
-	this.hasMine = false;
-	this.isClicked = false;
-	this.isFlag = false;
-	this.neighborFlags = -1;
-	this.neighborMines;
-}
+	//clickedCard.flip(x, y);
+	//show card
+	if (window.board.cardsVisible.length < 2) {
+		clickedCard.flip();
+		window.board.cardsVisible.push(clickedCard);
+		console.log(window.board.cardsVisible);
+	} 
+	if (window.board.cardsVisible.length == 2) {
 
-function clickSquare(row, col) {
-
-	//invalid row/col [0-7]
-	if (row < 0 || row > window.boardY-1 || col < 0 || col > window.boardX-1) { return; }
-
-	//nothing to do for square already clicked
-	if (window.minefield[row][col].isClicked) { return; }
-
-	//if space is marked as flag, and not a mine, unmark as flag
-	if (window.minefield[row][col].isFlag &&
-		!window.minefield[row][col].hasMine) {
-		setFlag(row, col, false);
-	}
-	/*
-	if (window.minefield[row][col].isFlag &&
-		window.minefield[row][col].hasMine) {
-		$(this).append(window.timesHtml);
-		reveal();
-		showLose();
-	}*/
-
-	//hit a bomb
-	if (window.minefield[row][col].hasMine ) {
-		$('#gameboard tr:nth-child('+(row+1)+') td:nth-child('+(col+1)+')').css('color', 'red');
-		if (window.minefield[row][col].isFlag ) {
-			$(this).append(window.timesHtml);
-		}
-		reveal();
-		showLose();
-		return;
-	} else {
-
-		$('#gameboard tr:nth-child('+(row+1)+') td:nth-child('+(col+1)+')').css('background-color', 'red')
-		window.clearedSquares++;
-		window.minefield[row][col].isClicked = true;
-		bombsNear = 0;
-		flagsNear = 0;
-		//count bombs in rows & cols around
-		for (var offsetRow = -1; offsetRow < 2; offsetRow++) {
-			for (var offsetCol = -1; offsetCol < 2; offsetCol++) {
-				if (inBounds(row, offsetRow, col, offsetCol)) {
-					if (window.minefield[row+offsetRow][col+offsetCol].hasMine) {
-						bombsNear++;
-					}
-					if (window.minefield[row+offsetRow][col+offsetCol].isFlag) {
-						flagsNear++;
-					}
-				}
-
-			}
-		}
-
-		if (bombsNear == 0) {
-			$('#gameboard tr:nth-child('+(row+1)+') td:nth-child('+(col+1)+')').css('background-color', 'black');
-			for (var offsetRow = -1; offsetRow < 2; offsetRow++) {
-				for (var offsetCol = -1; offsetCol < 2; offsetCol++) {
-					clickSquare(row+offsetRow, col+offsetCol);
-					if (!window.gameInPlay) {
-
-					}
-				}
-			}
-		} else { //show number of mines neighboring
-			if (window.minefield[row][col].isFlag) {
-				$('#gameboard tr:nth-child('+(row+1)+') td:nth-child('+(col+1)+')').css('color', 'black');
-			} else {
-				$('#gameboard tr:nth-child('+(row+1)+') td:nth-child('+(col+1)+')').html(bombsNear);
-				window.minefield[row][col].neighborMines = bombsNear;
-			}
-		}
-	   	if ((window.flags.length+window.clearedSquares+window.mines) == (window.boardX*window.boardY)) {
-			showWin();
-		}
+		console.log(window.board.cardsVisible);
+		setTimeout(function() { 
+			window.board.checkMatch();
+		}, 2000);
+		window.board.endTurn();
 	}
 
-}
-function inBounds(row, offsetRow, col, offsetCol) {
-	if (row+offsetRow >= 0 && row+offsetRow < window.boardY &&
-		col+offsetCol >= 0 && col+offsetCol < window.boardX) {
-		return true;
-	}
-	return false;
+	//add card to known
+	window.board.knownCards[y][x] = clickedCard;
+
 }
 
-function updateMines() {
-	$($('#numMines')).html(window.mines.toString());
+function reduceDeck(deck) {
+	var flattened = window.unknownCards.reduce(function(a, b) {
+  		return a.concat(b);
+	}, []);
 }
-function updateTime() {
-	$($('#timer')).html(window.mines.toString());
-}
+
+
 function showLose() {
 	window.gameInPlay = false;
 
@@ -237,82 +94,183 @@ function showLose() {
 	$('body').css('background-repeat', 'no-repeat');
 	$('body').css('background-position', 'center top');
 }
+
 function showWin() {
 	reveal();
 	$('body').css('background-image', 'url("../img/heartfall.gif")');
 	$('body').css('background-repeat','repeat');
 	$('body').css('background-position', 'center top');
 }
-function resetBoard() {
-	window.mines = 10;
-	window.clearedSquares = 0;
-	window.gameInPlay = true;
-	window.flags = new Array();
-	window.bombHtml = '<i class="fa fa-dot-circle-o"></i>';
-	window.timesHtml = '<i class="fa fa-times fa-2x"></i>';
-	window.startedGame = false;
-	window.clearInterval(window.timer);
-	$('body').disableTextSelect();
-	/*
-	for (var row=1; row <= window.boardX; row++) {
-		$('#gameboard tr:nth-child('+row+')').remove();
-	}*/
-	createGameboard();
-	placeBombs();
-	for(var cnt=0; cnt < window.locations.length; cnt++) {
-		countNeighborMines(window.locations[cnt][0], window.locations[cnt][1]);
-	}
-}
-function placeBombs(minefield) {
-	bombsLeft = window.mines;
-	window.locations = new Array(bombsLeft);
-	while ( bombsLeft ) {
-		x = Math.floor((Math.random()*window.boardX));
-		y = Math.floor((Math.random()*window.boardY));
-
-		if (window.minefield[x][y].hasMine != true) {
-			window.locations[window.mines - bombsLeft] = [x,y];
-			window.minefield[x][y].hasMine = true;
-			bombsLeft--;
-		}
-	}
-}
-
-function createGameboard() {
-	//create 8x8 array each holding square object
-	window.boardX=8;
-	window.boardY=8;
-
-	window.minefield = new Array(window.boardY);
-	for (var cnt=0; cnt < window.boardY; cnt++) {
-		$('#gameboard').append('<tr></tr>');
-		minefield[cnt] = new Array(window.boardX);
-		for (var hcnt=0;hcnt < window.boardX; hcnt++) {
-			$('#gameboard tr:nth-child('+(cnt+1)+')').append('<td id="row'+cnt.toString()+'_col'+hcnt.toString()+'" class="square"></td>');
-			window.minefield[cnt][hcnt] = new Square();
-		}
-	}
+function Player(number) {
+	this.name = "Player"+String(number);
+	this.score = 0;
 }
 
 function reveal() {
+	window.board.reveal();
+}
+function reset(players) {
+	window.board.reset(players);
+}
 
-	for (var cnt=0; cnt < window.boardY; cnt++) {
-		for (var hcnt=0;hcnt < window.boardX; hcnt++) {
-			if (window.minefield[cnt][hcnt].isFlag &&
-				!window.minefield[cnt][hcnt].hasMine) {
-				$('tr:nth-child('+(cnt+1)+') td:nth-child('+(hcnt+1)+')').append(window.timesHtml);
-			}
+function Board(nPlayers = 1) {
+	this.width = Object.keys(NUM).length;
+	this.height = Object.keys(SUIT).length;
+	this.players = Array(nPlayers); //todo: safeguard against <1
+	this.round = 1;
+	this.gameInPlay = false;
+	
+	this.cards = new Array(this.width);
+	this.knownCards = new Array(this.width); //13 because A, 1...10,J,Q,K
+	this.unknownCards = new Array(this.width); //13 because A, 1...10,J,Q,K
+
+	this.cardsVisible = [];
+	//add players
+	for (var i=0; i< this.nPlayers; i++) {
+		this.players[i] = new Player(i+1);
+	}
+
+	this.setup = function () {	
+		
+		//set current player
+		this.currentPlayer = this.players[nPlayers%this.round];
+
+		$('#gameboard').empty();
+		$('body').disableTextSelect();
+		
+		//lay down cards
+		for (var s in SUIT) {
+			this.cards[SUIT[s].value] = new Array(this.height);
+			this.unknownCards[SUIT[s].value] = new Array(this.height);
+			this.knownCards[SUIT[s].value] = new Array(this.height);
+			$('#gameboard').append('<tr></tr>');
+
+	  		for (var n in NUM) {
+	  			var x = NUM[n].value
+	  			var y = SUIT[s].value
+	  			$('#gameboard tr:nth-child('+(y+1)+')').append('<td id="row'+y.toString()+'_col'+x.toString()+'" class="card clearfixfix">'+CODE_CARDBACK+'</td>');//&#xe9;
+	  			this.cards[SUIT[s].value][NUM[n].value-1] = new Card(NUM[n], SUIT[s])
+	  			this.unknownCards[SUIT[s].value][NUM[n].value-1] = new Card(NUM[n], SUIT[s])
+	  		}
 		}
-	}
-	for (var cnt=0; cnt < window.locations.length; cnt++) {
-		window.minefield[window.locations[cnt][0]].isFlag = true;
-		updateNeighborFlags(window.locations[cnt][0], window.locations[cnt][1], 1);
-		$('tr:nth-child('+(window.locations[cnt][0]+1)+') td:nth-child('+(window.locations[cnt][1]+1)+')').html(window.bombHtml);
-	}
-	window.mines = 0;
-	window.flags = window.locations;
+		this.gameInPlay = true;
+		this.print("initial setup");
+	};
 
-	updateMines();
+	this.shuffle = function() {
+		var cnt = 4* this.width * this.height;
+		for (cnt; cnt >=0; cnt--) {
+
+			initialX =  Math.floor(Math.random() * this.width);
+			initialY = Math.floor(Math.random() * this.height);
+
+			destX = Math.floor(Math.random() * this.width);
+			destY = Math.floor(Math.random() * this.height);
+
+			tempCard = this.cards[initialY][initialX];
+
+			this.cards[initialY][initialX] = this.cards[destY][destX];		
+			this.cards[initialY][initialX].x = 	initialY;
+			this.cards[initialY][initialX].y = 	initialX;
+
+			this.cards[destY][destX] = tempCard;
+			
+			this.cards[destY][destX].x = destY;
+			this.cards[destY][destX].y = destX;
+			// console.log("cardB x,y:", this.cards[destY][destX].x, this.cards[destY][destX].y)
+		}
+		this.print("shuffled");
+	};
+	this.print = function(statename) {
+		var board_str = "";
+		for (var y = 0; y < this.height; y++) {
+			board_str += "\n";
+		 	for (var x =0; x< this.width; x++) {
+		 		board_str += this.cards[y][x].cardInfo() + ", ";
+		 	}
+		}
+		console.log("BOARD STATE: ", statename, "\n:", board_str);
+	};
+	this.reveal = function() {
+		console.log(this.height, this.width);
+		for (var y = 0; y < this.height; y++) {
+			for (var x =0; x< this.width; x++) {
+		 		this.cards[y][x].draw(this.cards[y][x].code);
+		 	}
+		}
+		console.log('hit reveal');
+	};
+	this.checkMatch = function() {
+		//assert( this.cardsVisible.length == 2, 'Board should have two visible cards');
+		console.log ("hi", this.cardsVisible);
+		if (this.cardsVisible[0].number.value == this.cardsVisible[1].number.value) {
+			//Deal with a MATCH
+			cnt = 0;
+			while (cnt < this.cardsVisible.length) {
+				card = this.cardsVisible[cnt];
+				//set card to matched
+				card.matched = true;
+				//update known and unknown
+				console.log(this.unknownCards);
+				console.log(this.knownCards);
+				this.unknownCards[card.y][card.x] = null;
+				this.knownCards[card.y][card.x] = null;
+
+				//draw cards to scoreboard
+				card.drawToScoreboard();
+				this.currentPlayer.score++;
+				cnt++;
+			}
+		} else { //NO MATCH
+			//flip over
+			this.cardsVisible[0].flip();
+			this.cardsVisible[1].flip();
+		}
+	};
+	this.endTurn = function () {
+		this.round++;
+		this.currentPlayer = this.players[nPlayers%this.round];
+		//set current player
+		this.cardsVisible = [];
+		console.log(this.currentPlayer, "'s turn now.");
+	}
+
+}
+function Card(cardnum, cardsuit) {
+	this.number = cardnum;
+	this.suit = cardsuit;
+	this.code = CODE_PREFIX+this.suit.code+this.number.code;
+	this.faceup = false;
+	this.matched = false;
+	this.x = cardsuit.value;
+	this.y = cardnum.value-1;
+	this.draw = function (code) {
+		//console.log("x: ", this.x, "y: ", this.y);
+		$('#gameboard tr:nth-child('+(this.x+1)+') td:nth-child('+(this.y+1)+')').html(code);
+	}
+	this.drawToScoreboard = function () {
+		$('#gameboard tr:nth-child('+(this.y+1)+') td:nth-child('+(this.x+1)+')').empty();
+		$('#scoreboard tr:nth-child('+(this.y+1)+') td:nth-child('+(this.x+1)+')').html(this.code);	
+	}
+	this.flip = function (x, y) {
+		if (!this.faceup) {
+			this.draw(this.code);
+		} else {
+			this.draw(CODE_CARDBACK);
+		}
+		this.faceup = !this.faceup;
+		console.log(this.cardInfo());
+    };
+    this.cardInfo = function () {
+        return this.number.name + this.suit.name + "("+this.faceup+") @[" +this.x+","+this.y+"]";
+    };
+}
+function assignUnknownCard() {
+	var flattened = window.unknownCards.reduce(function(a, b) {
+  		return a.concat(b);
+	}, []);
+	return Math.random(flattened.length)
+	return (SUIT.HEART, NUM.ACE)
 }
 
 jQuery.fn.disableTextSelect = function() {
